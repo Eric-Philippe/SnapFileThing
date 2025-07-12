@@ -8,6 +8,7 @@
 - [x] Make a proper fileicon
 - [ ] Add a view with all the URLs of the selected files (for sharing)
 - [x] Add a .env config to generate QOI files at will
+- [ ] Add a footer with the version number, and source code link
 
 ## Frontend Fixes
 

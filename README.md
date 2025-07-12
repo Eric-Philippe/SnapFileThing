@@ -1,12 +1,10 @@
-<div align="center">
+<p align="center">
+  <img src="branding/snapfilething.png" width="100" height="100" style="border-radius:15%" alt="SnapFileThing logo"/>
+</p>
 
-<img align="left" width="100" height="100" style="border-radius: 15%" src="branding/snapfilething.png"/>
+<h1 align="center">SnapFileThing</h1>
 
-<h1>SnapFileThing</h1>
-
-<p>SnapFileThing is a lightweight self-hosted file sharing solution.</p>
-
-</div>
+<p align="center">SnapFileThing is a lightweight self-hosted file sharing solution.</p>
 
 ---
 
