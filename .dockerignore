@@ -1,0 +1,47 @@
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.env.local
+frontend/.env.*.local
+
+# Backend
+backend/target/
+backend/uploads/
+backend/*.log
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+BUILD.md
+SECURITY.md
+*.md
+
+# Scripts
+*.sh
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
