@@ -7,7 +7,7 @@ on:
     paths:
       - "**/*.ts"
       - "**/*.rs"
-      - "**/$.tsx"
+      - "**/*.tsx"
 
 jobs:
   build-and-deploy:
