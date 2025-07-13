@@ -1,7 +1,20 @@
-pub use crate::handlers::export::export_files;
-pub use crate::handlers::import::import_files;
-use actix_web::get;
-use crate::models::FileListResponse;
+use actix_web::{delete, get, put, web, HttpRequest, HttpResponse, Result};
+use serde::Deserialize;
+use utoipa::{IntoParams, ToSchema};
+use tracing::{info, warn};
+
+use crate::config::AppConfig;
+use crate::error::AppError;
+use crate::models::{ErrorResponse, FileListResponse};
+use crate::services::folder_manager::FolderManager;
+use crate::services::file_utils::FileManager;
+
+// Re-export handlers and their OpenAPI paths
+pub use crate::handlers::export::{export_files, __path_export_files};
+pub use crate::handlers::import::{ImportRequest, import_files, __path_import_files};
+
+
+
 #[utoipa::path(
     get,
     path = "/api/files",
@@ -79,15 +92,6 @@ pub async fn list_files(
     Ok(HttpResponse::Ok().json(response))
 }
 
-use actix_web::{delete, put, web, HttpResponse, Result, HttpRequest};
-use serde::Deserialize;
-use utoipa::{IntoParams, ToSchema};
-use crate::config::AppConfig;
-use crate::error::AppError;
-use crate::services::file_utils::FileManager;
-use crate::services::folder_manager::FolderManager;
-use tracing::{info, warn};
-
 #[derive(Deserialize, IntoParams, ToSchema)]
 pub struct ListQuery {
     /// Page number (0-based)
@@ -109,10 +113,6 @@ pub struct ExportQuery {
     /// Folder ID to export files from (optional, omit for all files)
     pub folder_id: Option<String>,
 }
-
-// Re-export import/export types and OpenAPI paths for OpenAPI and main.rs compatibility
-pub use crate::handlers::import::{ImportRequest, __path_import_files};
-pub use crate::handlers::export::__path_export_files;
 
 
 

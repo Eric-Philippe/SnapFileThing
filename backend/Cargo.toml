@@ -9,7 +9,7 @@ license = "MIT"
 [dependencies]
 # Web framework
 actix-web = "4"
-actix-multipart = "0.6"
+actix-multipart = "0.7"
 actix-files = "0.6"
 actix-cors = "0.7"
 
@@ -25,7 +25,7 @@ image = { version = "0.25", features = ["jpeg", "png", "webp", "gif", "bmp", "ti
 qoi = "0.4"
 
 # Utilities
-uuid = { version = "1.0", features = ["v4"] }
+uuid = { version = "1.17", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
 mime = "0.3"
 base64 = "0.22"
@@ -36,30 +36,29 @@ dotenv = "0.15"
 
 # Error handling
 anyhow = "1.0"
-thiserror = "1.0"
+thiserror = "2.0"
 
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-tracing-actix-web = "0.7"
 
 # Security
-constant_time_eq = "0.3"
+constant_time_eq = "0.4"
 jsonwebtoken = "9"
-rand = "0.8"
+rand = "0.9"
 
 # Rate limiting
-governor = "0.6"
+governor = "0.10"
 
 # File system utilities
-sanitize-filename = "0.5"
+sanitize-filename = "0.6"
 futures = "0.3.31"
 futures-util = "0.3.31"
-zip = "0.6"
+zip = "4.3"
 
 # API Documentation
-utoipa = { version = "4", features = ["actix_extras", "chrono"] }
-utoipa-swagger-ui = { version = "6", features = ["actix-web"] }
+utoipa = { version = "5", features = ["actix_extras", "chrono"] }
+utoipa-swagger-ui = { version = "9", features = ["actix-web"] }
 tempfile = "3.20.0"
 walkdir = "2.5.0"
 

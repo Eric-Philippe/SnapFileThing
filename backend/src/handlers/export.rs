@@ -1,9 +1,13 @@
-use actix_web::get;
-use actix_web::{web, HttpResponse};
-use crate::config::AppConfig;
+use actix_web::{get, web, HttpResponse};
+use std::io::Cursor;
+use tracing::info;
+use zip::{write::FileOptions, CompressionMethod};
+
+use crate::AppConfig;
 use crate::error::AppError;
-use crate::services::file_utils::FileManager;
+use crate::models::ErrorResponse;
 use crate::services::folder_manager::FolderManager;
+use crate::services::file_utils::FileManager;
 use crate::handlers::files::ExportQuery;
 
 #[utoipa::path(
@@ -21,10 +25,6 @@ pub async fn export_files(
     query: web::Query<ExportQuery>,
     config: web::Data<AppConfig>,
 ) -> Result<HttpResponse, AppError> {
-    use tracing::info;
-    use zip::write::FileOptions;
-    use std::io::Cursor;
-
     let file_manager = FileManager::new(
         &config.server.upload_dir,
         config.get_static_base_url(),
@@ -69,7 +69,8 @@ pub async fn export_files(
     let mut zip_data = Vec::new();
     {
         let mut zip = zip::ZipWriter::new(Cursor::new(&mut zip_data));
-        let options = FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+        let options: FileOptions<'_, ()> = FileOptions::default()
+            .compression_method(CompressionMethod::Deflated);
 
         // 1. Add empty folders
         use std::collections::HashSet;

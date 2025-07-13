@@ -413,7 +413,7 @@ function FileExplorerInner({
     const confirmMessage =
       item.type === "folder"
         ? `Are you sure you want to delete the folder "${item.name}"? This action cannot be undone.`
-        : `Are you sure you want to delete the file "${item.name}"? This action cannot be undone.`;
+        : `Are you sure you want to delete this file ? This action cannot be undone.`;
     setConfirmModal({
       open: true,
       message: (

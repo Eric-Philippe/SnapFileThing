@@ -10,7 +10,7 @@ use utoipa::ToSchema;
 
 use crate::config::AppConfig;
 use crate::error::AppError;
-use crate::models::{LoginRequest, LoginResponse, RefreshRequest, TokenVerifyResponse, LogoutResponse};
+use crate::models::{LoginRequest, LoginResponse, RefreshRequest, TokenVerifyResponse, LogoutResponse, ErrorResponse};
 
 // JWT Claims structure
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]

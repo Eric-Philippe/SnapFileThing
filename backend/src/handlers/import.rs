@@ -1,11 +1,12 @@
-
 use actix_multipart::Multipart;
 use actix_web::{post, web, HttpResponse};
 use futures_util::StreamExt;
-use std::io::Cursor;
-use crate::config::AppConfig;
-use crate::error::AppError;
 use std::collections::HashMap;
+use std::io::Cursor;
+
+use crate::AppConfig;
+use crate::error::AppError;
+use crate::models::ErrorResponse;
 use crate::services::folder_manager::FolderManager;
 
 #[utoipa::path(
@@ -31,17 +32,19 @@ pub async fn import_files(
         let mut field = item.map_err(|e| {
             AppError::BadRequest(format!("Multipart error: {e}"))
         })?;
-        let cd = field.content_disposition();
-        let filename = cd.get_filename().map(|f| f.to_string());
-        if let Some(filename) = filename {
-            if filename.ends_with(".zip") {
-                while let Some(chunk) = field.next().await {
-                    let data = chunk.map_err(|e| {
-                        AppError::BadRequest(format!("Upload error: {e}"))
-                    })?;
-                    zip_data.extend_from_slice(&data);
+        let content_disposition = field.content_disposition();
+        
+        if let Some(cd) = content_disposition {
+            if let Some(filename) = cd.get_filename() {
+                if filename.ends_with(".zip") {
+                    while let Some(chunk) = field.next().await {
+                        let data = chunk.map_err(|e| {
+                            AppError::BadRequest(format!("Upload error: {e}"))
+                        })?;
+                        zip_data.extend_from_slice(&data);
+                    }
+                    break;
                 }
-                break;
             }
         }
     }
@@ -109,7 +112,7 @@ pub async fn import_files(
     // Copy files and assign to folders (flat, no physical subfolders)
     use crate::services::file_utils::FileManager;
     use crate::services::image_processor::ImageProcessor;
-use crate::services::file_upload::process_uploaded_file;
+    use crate::services::file_upload::process_uploaded_file;
     let file_manager = FileManager::new(upload_dir, config.get_static_base_url());
     let image_processor = ImageProcessor::new(config.image.clone());
 

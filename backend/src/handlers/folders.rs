@@ -1,12 +1,12 @@
-use actix_web::{delete, get, post, put, web, HttpResponse, Result};
+use actix_web::{delete, get, post, put, web, HttpResponse};
 use serde::Deserialize;
+use tracing::info;
 use utoipa::{IntoParams, ToSchema};
 
 use crate::config::AppConfig;
 use crate::error::AppError;
-use crate::models::{CreateFolderRequest, MoveFolderRequest};
+use crate::models::{ErrorResponse, FolderInfo, FolderListResponse, CreateFolderRequest, MoveFolderRequest};
 use crate::services::folder_manager::FolderManager;
-use tracing::info;
 
 #[derive(Deserialize, IntoParams, ToSchema)]
 pub struct FolderQuery {
