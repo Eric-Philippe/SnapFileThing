@@ -217,14 +217,3 @@ MIT License. See [LICENSE](LICENSE) for details.
 <p align="center">
   <i>SnapFileThing – File sharing, reimagined for simplicity.</i>
 </p>
----
-
-## 📄 License
-
-MIT License. See [LICENSE](LICENSE) for details.
-
----
-
-<p align="center">
-  <i>SnapFileThing – File sharing, reimagined for simplicity.</i>
-</p>
