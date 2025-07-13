@@ -67,14 +67,10 @@ where
         let path = req.path();
         
         // Backward compatibility mapping
-        let auth_mode = match self.auth_config.mode.as_str() {
-            "public" => "disabled",  // Old "public" -> new "disabled"
-            "local" => "protected",  // Old "local" -> new "protected"
-            mode => mode,            // Use new naming directly
-        };
+        let auth_mode = self.auth_config.mode.as_str();
         
         // If authentication mode is disabled, skip auth entirely
-        if auth_mode == "disabled" {
+        if auth_mode == "local" {
             let fut = self.service.call(req);
             return Box::pin(async move {
                 let res = fut.await?;

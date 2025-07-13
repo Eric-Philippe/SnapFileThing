@@ -5,7 +5,7 @@ use crate::error::AppError;
 use crate::models::{FileInfo, FileUrls};
 use crate::services::image_processor::ImageProcessor;
 use crate::utils::mime_type::get_mime_type;
-use tracing::{debug, info};
+use tracing::{info};
 
 pub struct FileManager {
     upload_dir: PathBuf,
@@ -45,36 +45,6 @@ impl FileManager {
     /// Get the full path for a filename in the upload directory
     pub fn get_file_path(&self, filename: &str) -> PathBuf {
         self.upload_dir.join(filename)
-    }
-
-    /// Generate URLs for a file
-    #[allow(dead_code)]
-    pub fn generate_urls(&self, filename: &str, is_image: bool) -> FileUrls {
-        let base_url = format!("{}/uploads", self.static_base_url);
-        let original = format!("{}/{}", base_url, filename);
-        
-        if !is_image {
-            return FileUrls {
-                original,
-                qoi: None,
-                thumbnail: None,
-            };
-        }
-
-        // Generate QOI and thumbnail filenames
-        let path = Path::new(filename);
-        let stem = path.file_stem()
-            .and_then(|s| s.to_str())
-            .unwrap_or("file");
-        
-        let qoi_filename = format!("{}.qoi", stem);
-        let thumb_filename = format!("{}_thumb.webp", stem);
-        
-        FileUrls {
-            original,
-            qoi: Some(format!("{}/{}", base_url, qoi_filename)),
-            thumbnail: Some(format!("{}/{}", base_url, thumb_filename)),
-        }
     }
 
     /// List files with optional filter by filename list
@@ -225,14 +195,12 @@ impl FileManager {
             let qoi_path = upload_dir.join(format!("{}.qoi", stem));
             if qoi_path.exists() {
                 fs::remove_file(&qoi_path)?;
-                debug!("Deleted QOI file: {:?}", qoi_path);
             }
             
             // Remove thumbnail
             let thumb_path = upload_dir.join(format!("{}_thumb.webp", stem));
             if thumb_path.exists() {
                 fs::remove_file(&thumb_path)?;
-                debug!("Deleted thumbnail: {:?}", thumb_path);
             }
             
             Ok(())

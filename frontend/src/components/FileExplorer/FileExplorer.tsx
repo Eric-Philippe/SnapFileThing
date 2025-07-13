@@ -3,8 +3,18 @@ import Toolbar from "./Toolbar";
 import Breadcrumbs from "./Breadcrumbs";
 import CreateFolderForm from "./CreateFolderForm";
 import ContextMenu from "./ContextMenu";
+import FileUrlsModal from "./FileUrlsModal";
 import GridView from "./GridView";
 import ListView from "./ListView";
+import ConfirmModal from "../ui/ConfirmModal";
+import { ToastProvider, useToast } from "../ui/ToastProvider";
+// Confirm modal state type
+type ConfirmModalState = {
+  open: boolean;
+  message: string | React.ReactNode;
+  destructive?: boolean;
+  onConfirm: (() => void) | null;
+};
 import {
   FolderIcon,
   DocumentIcon,
@@ -69,11 +79,30 @@ interface ExplorerState {
   dragOverItem?: ExplorerItem;
 }
 
-export default function FileExplorer({
+function FileExplorerInner({
   currentFolderId,
   onFolderChange,
   onError,
 }: DesktopFileExplorerProps) {
+  const { showToast } = useToast();
+  const [showUrlsModal, setShowUrlsModal] = useState<ExplorerItem | null>(null);
+
+  // Confirm modal state
+  const [confirmModal, setConfirmModal] = useState<ConfirmModalState>({
+    open: false,
+    message: "",
+    destructive: false,
+    onConfirm: null,
+  });
+
+  const handleShowUrls = (item: ExplorerItem) => {
+    setShowUrlsModal(item);
+    setState((prev) => ({
+      ...prev,
+      contextMenu: { ...prev.contextMenu, visible: false },
+    }));
+  };
+
   const [state, setState] = useState<ExplorerState>({
     items: [],
     breadcrumbs: [],
@@ -361,6 +390,10 @@ export default function FileExplorer({
         contextMenu: { ...prev.contextMenu, visible: false },
       }));
       loadContent(currentFolderId);
+      showToast({
+        type: "success",
+        message: `Folder "${request.name}" created successfully!`,
+      });
     } catch (error) {
       onError(
         `Failed to create folder: ${
@@ -368,84 +401,113 @@ export default function FileExplorer({
         }`
       );
       setState((prev) => ({ ...prev, creating: false }));
+      showToast({
+        type: "error",
+        message: `Failed to create folder.`,
+      });
     }
   };
 
-  const handleDeleteItem = async (item: ExplorerItem) => {
-    // Don't allow deleting the back folder
-    if (item.id === "__back__") {
-      return;
-    }
-
+  const handleDeleteItem = (item: ExplorerItem) => {
+    if (item.id === "__back__") return;
     const confirmMessage =
       item.type === "folder"
         ? `Are you sure you want to delete the folder "${item.name}"? This action cannot be undone.`
         : `Are you sure you want to delete the file "${item.name}"? This action cannot be undone.`;
-
-    if (!confirm(confirmMessage)) {
-      return;
-    }
-
-    try {
-      if (item.type === "folder") {
-        await foldersApi.deleteFolder(item.id);
-      } else {
-        await filesApi.deleteFile(item.id);
-      }
-
-      setState((prev) => ({
-        ...prev,
-        selectedItems: new Set(), // Clear selection after deletion
-        contextMenu: { ...prev.contextMenu, visible: false },
-      }));
-
-      loadContent(currentFolderId);
-    } catch (error) {
-      onError(
-        `Failed to delete ${item.type}: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
-    }
+    setConfirmModal({
+      open: true,
+      message: (
+        <>
+          Are you sure you want to delete the {item.type} <b>{item.name}</b>?
+          This action cannot be undone.
+        </>
+      ),
+      destructive: true,
+      onConfirm: async () => {
+        try {
+          if (item.type === "folder") {
+            await foldersApi.deleteFolder(item.id);
+          } else {
+            await filesApi.deleteFile(item.id);
+          }
+          setState((prev) => ({
+            ...prev,
+            selectedItems: new Set(),
+            contextMenu: { ...prev.contextMenu, visible: false },
+          }));
+          loadContent(currentFolderId);
+          showToast({
+            type: "success",
+            message: `${item.type === "folder" ? "Folder" : "File"} deleted.`,
+          });
+        } catch (error) {
+          onError(
+            `Failed to delete ${item.type}: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }`
+          );
+          showToast({
+            type: "error",
+            message: `Failed to delete ${item.type}.`,
+          });
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, open: false }));
+        }
+      },
+    });
   };
 
-  const handleDeleteMultipleItems = async (items: ExplorerItem[]) => {
-    // Filter out back folder from items to delete
+  const handleDeleteMultipleItems = (items: ExplorerItem[]) => {
     const itemsToDelete = items.filter((item) => item.id !== "__back__");
-
-    if (itemsToDelete.length === 0) {
-      return;
-    }
-
+    if (itemsToDelete.length === 0) return;
     const confirmMessage = `Are you sure you want to delete ${itemsToDelete.length} items? This action cannot be undone.`;
-    if (!confirm(confirmMessage)) {
-      return;
-    }
-
-    try {
-      // Delete items sequentially to avoid overwhelming the server
-      for (const item of itemsToDelete) {
-        if (item.type === "folder") {
-          await foldersApi.deleteFolder(item.id);
-        } else {
-          await filesApi.deleteFile(item.id);
+    setConfirmModal({
+      open: true,
+      message: (
+        <>
+          Are you sure you want to delete <b>{itemsToDelete.length} items</b>?
+          This action cannot be undone.
+        </>
+      ),
+      destructive: true,
+      onConfirm: async () => {
+        try {
+          for (const item of itemsToDelete) {
+            if (item.type === "folder") {
+              await foldersApi.deleteFolder(item.id);
+            } else {
+              await filesApi.deleteFile(item.id);
+            }
+          }
+          setState((prev) => ({
+            ...prev,
+            selectedItems: new Set(),
+            contextMenu: { ...prev.contextMenu, visible: false },
+          }));
+          loadContent(currentFolderId);
+          showToast({
+            type: "success",
+            message: `${itemsToDelete.length} items deleted.`,
+          });
+        } catch (error) {
+          onError(
+            `Failed to delete items: ${
+              error instanceof Error ? error.message : "Unknown error"
+            }`
+          );
+          showToast({
+            type: "error",
+            message: `Failed to delete items.`,
+          });
+        } finally {
+          setConfirmModal((prev) => ({ ...prev, open: false }));
         }
-      }
-
-      setState((prev) => ({
-        ...prev,
-        selectedItems: new Set(), // Clear selection after deletion
-        contextMenu: { ...prev.contextMenu, visible: false },
-      }));
-
-      loadContent(currentFolderId);
-    } catch (error) {
-      onError(
-        `Failed to delete items: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
-    }
+      },
+    });
+  };
+  // ConfirmModal handler
+  const handleConfirmModalCancel = () => {
+    setConfirmModal((prev) => ({ ...prev, open: false }));
   };
 
   const handleFileUpload = async (files: FileList) => {
@@ -465,12 +527,22 @@ export default function FileExplorer({
 
       loadContent(currentFolderId);
       onError(""); // Clear any previous errors
+      showToast({
+        type: "success",
+        message: `${
+          fileArray.length > 1 ? `${fileArray.length} files` : `File`
+        } uploaded successfully!`,
+      });
     } catch (error) {
       onError(
         `Failed to upload files: ${
           error instanceof Error ? error.message : "Unknown error"
         }`
       );
+      showToast({
+        type: "error",
+        message: `Failed to upload files.`,
+      });
     }
   };
 
@@ -545,12 +617,22 @@ export default function FileExplorer({
       // Reload content to reflect changes
       loadContent(currentFolderId);
       onError(""); // Clear any previous errors
+      showToast({
+        type: "success",
+        message: `${
+          draggedItem.type === "folder" ? "Folder" : "File"
+        } moved successfully!`,
+      });
     } catch (error) {
       onError(
         `Failed to move ${draggedItem.type}: ${
           error instanceof Error ? error.message : "Unknown error"
         }`
       );
+      showToast({
+        type: "error",
+        message: `Failed to move ${draggedItem.type}.`,
+      });
     }
   };
 
@@ -628,13 +710,31 @@ export default function FileExplorer({
         ...prev,
         contextMenu: { ...prev.contextMenu, visible: false },
       }));
+      showToast({
+        type: "success",
+        message: "Link copied to clipboard!",
+      });
     } catch {
       // Clipboard operation failed
+      showToast({
+        type: "error",
+        message: "Failed to copy link.",
+      });
     }
   };
 
   return (
     <div className="relative bg-white rounded-lg shadow-sm border h-full flex flex-col">
+      {/* Confirm Modal */}
+      <ConfirmModal
+        open={confirmModal.open}
+        message={confirmModal.message}
+        destructive={confirmModal.destructive}
+        onConfirm={() => {
+          if (confirmModal.onConfirm) confirmModal.onConfirm();
+        }}
+        onCancel={handleConfirmModalCancel}
+      />
       <Toolbar
         selectedCount={state.selectedItems.size}
         onNewFolder={() =>
@@ -657,9 +757,45 @@ export default function FileExplorer({
         onExportAll={async () => {
           try {
             await filesApi.exportAllFiles();
+            showToast({
+              type: "info",
+              message:
+                "Export started. You will be notified when your files are ready.",
+            });
           } catch (error: any) {
             onError(error?.message || "Failed to export files");
+            showToast({
+              type: "error",
+              message: "Failed to export files.",
+            });
           }
+        }}
+        onImport={() => {
+          // Open file dialog for ZIP import
+          const input = document.createElement("input");
+          input.type = "file";
+          input.accept = ".zip,application/zip";
+          input.onchange = async (e: any) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            try {
+              const res = await filesApi.importFiles(
+                file,
+                state.currentFolder?.id
+              );
+              showToast({
+                type: "success",
+                message: res.message || "Import successful!",
+              });
+            } catch (error: any) {
+              onError(error?.message || "Failed to import files");
+              showToast({
+                type: "error",
+                message: error?.message || "Failed to import files.",
+              });
+            }
+          };
+          input.click();
         }}
         viewMode={state.viewMode}
         onToggleView={() =>
@@ -732,7 +868,8 @@ export default function FileExplorer({
               Right-click to create folders or upload files
             </p>
           </div>
-        ) : state.viewMode === "grid" ? (
+        ) : null}
+        {state.viewMode === "grid" ? (
           <GridView
             items={state.items}
             selectedItems={state.selectedItems}
@@ -745,8 +882,10 @@ export default function FileExplorer({
             onItemDragOver={handleItemDragOver}
             onItemDragLeave={handleItemDragLeave}
             onFolderDrop={handleFolderDrop}
+            onDeleteItem={handleDeleteItem}
             getFileIcon={getFileIcon}
             formatFileSize={formatFileSize}
+            copyToClipboard={copyToClipboard}
           />
         ) : (
           <ListView
@@ -761,9 +900,12 @@ export default function FileExplorer({
             onItemDragOver={handleItemDragOver}
             onItemDragLeave={handleItemDragLeave}
             onFolderDrop={handleFolderDrop}
+            onShowUrls={handleShowUrls}
+            onDelete={handleDeleteItem}
             getFileIcon={getFileIcon}
             formatFileSize={formatFileSize}
             formatDate={formatDate}
+            copyToClipboard={copyToClipboard}
           />
         )}
       </div>
@@ -786,7 +928,23 @@ export default function FileExplorer({
           setState((prev) => ({ ...prev, showCreateForm: true }))
         }
         onUploadFiles={() => fileInputRef.current?.click()}
+        onShowUrls={handleShowUrls}
       />
+
+      {showUrlsModal && (
+        <FileUrlsModal
+          file={showUrlsModal}
+          onClose={() => setShowUrlsModal(null)}
+        />
+      )}
     </div>
+  );
+}
+
+export default function FileExplorer(props: DesktopFileExplorerProps) {
+  return (
+    <ToastProvider>
+      <FileExplorerInner {...props} />
+    </ToastProvider>
   );
 }

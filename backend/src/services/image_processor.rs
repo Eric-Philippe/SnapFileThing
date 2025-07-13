@@ -2,7 +2,7 @@ use image::{ImageFormat, GenericImageView};
 use std::path::Path;
 use crate::error::AppError;
 use crate::config::ImageConfig;
-use tracing::{info, debug};
+use tracing::{info};
 
 pub struct ImageProcessor {
     config: ImageConfig,
@@ -36,9 +36,7 @@ impl ImageProcessor {
         let input_path = input_path.to_owned();
         let output_path = output_path.to_owned();
 
-        tokio::task::spawn_blocking(move || -> Result<(u32, u32), AppError> {
-            debug!("Converting image to QOI: {:?} -> {:?}", input_path, output_path);
-            
+        tokio::task::spawn_blocking(move || -> Result<(u32, u32), AppError> {            
             let img = image::open(&input_path)?;
             let (width, height) = img.dimensions();
             
@@ -71,9 +69,7 @@ impl ImageProcessor {
         let thumbnail_size = self.config.thumbnail_size;
         let _webp_quality = self.config.webp_quality;
 
-        tokio::task::spawn_blocking(move || -> Result<(), AppError> {
-            debug!("Generating thumbnail: {:?} -> {:?}", input_path, output_path);
-            
+        tokio::task::spawn_blocking(move || -> Result<(), AppError> {            
             let img = image::open(&input_path)?;
             
             // Calculate thumbnail dimensions while maintaining aspect ratio
@@ -105,6 +101,7 @@ impl ImageProcessor {
     }
 
     /// Get image dimensions without loading the full image
+    #[allow(dead_code)]
     pub async fn get_dimensions(&self, path: &Path) -> Result<(u32, u32), AppError> {
         let path = path.to_owned();
         

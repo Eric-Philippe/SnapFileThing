@@ -5,6 +5,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Upload, FolderOpen } from "lucide-react";
 import { Link } from "react-router-dom";
+import { Footer } from "@/components/Footer";
 
 function UploadPage() {
   const [error, setError] = useState("");
@@ -95,6 +96,7 @@ function UploadPage() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

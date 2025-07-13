@@ -1,6 +1,7 @@
 import React from "react";
 import { FolderIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { ExplorerItem } from "./FileExplorer";
+import { ClipboardCheckIcon } from "lucide-react";
 
 interface GridViewProps {
   items: ExplorerItem[];
@@ -14,8 +15,10 @@ interface GridViewProps {
   onItemDragOver: (e: React.DragEvent, item: ExplorerItem) => void;
   onItemDragLeave: (e: React.DragEvent, item: ExplorerItem) => void;
   onFolderDrop: (e: React.DragEvent, item: ExplorerItem) => void;
+  onDeleteItem: (item: ExplorerItem) => void;
   getFileIcon: (mimeType?: string) => React.ElementType;
   formatFileSize: (bytes: number) => string;
+  copyToClipboard: (text: string) => void;
 }
 
 export default function GridView({
@@ -30,8 +33,10 @@ export default function GridView({
   onItemDragOver,
   onItemDragLeave,
   onFolderDrop,
+  onDeleteItem,
   getFileIcon,
   formatFileSize,
+  copyToClipboard,
 }: GridViewProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 p-4">
@@ -54,29 +59,53 @@ export default function GridView({
             } ${isDraggedOver ? "bg-green-100 ring-2 ring-green-500" : ""}`}
             onClick={(e) => !isBackFolder && onItemClick(item, e)}
             onDoubleClick={() => onItemDoubleClick(item)}
-            onContextMenu={(e) => !isBackFolder && onContextMenu(e, item)}
+            onContextMenu={(e) => {
+              if (!isBackFolder) {
+                e.preventDefault();
+                e.stopPropagation();
+                onContextMenu(e, item);
+              }
+            }}
             onDragStart={(e) => onItemDragStart(e, item)}
             onDragEnd={onItemDragEnd}
             onDragOver={(e) => onItemDragOver(e, item)}
             onDragLeave={(e) => onItemDragLeave(e, item)}
             onDrop={(e) => onFolderDrop(e, item)}
           >
-            {/* Delete button - appears on hover or when selected, but not for back folder */}
+            {/* Action buttons - appears on hover or when selected, but not for back folder */}
             {!isBackFolder && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // You may want to pass a delete handler as prop for better separation
-                }}
-                className={`absolute top-1 right-1 p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-opacity ${
-                  isSelected
-                    ? "opacity-100"
-                    : "opacity-0 group-hover:opacity-100"
-                }`}
-                title="Delete"
-              >
-                <TrashIcon className="w-3 h-3" />
-              </button>
+              <div className="absolute top-1 right-1 flex gap-1">
+                {item.type === "file" && item.urls?.original && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      copyToClipboard(item.urls!.original);
+                    }}
+                    className={`p-1 bg-white text-gray-600 rounded-full hover:bg-gray-200 transition-opacity border border-gray-200 shadow-sm ${
+                      isSelected
+                        ? "opacity-100"
+                        : "opacity-0 group-hover:opacity-100"
+                    }`}
+                    title="Copy Direct Link"
+                  >
+                    <ClipboardCheckIcon className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteItem(item);
+                  }}
+                  className={`p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-opacity ${
+                    isSelected
+                      ? "opacity-100"
+                      : "opacity-0 group-hover:opacity-100"
+                  }`}
+                  title="Delete"
+                >
+                  <TrashIcon className="w-3 h-3" />
+                </button>
+              </div>
             )}
             {/* Thumbnail or Icon */}
             <div className="w-16 h-16 flex items-center justify-center mb-2">

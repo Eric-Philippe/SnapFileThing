@@ -6,11 +6,11 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::error::AppError;
 use crate::models::{FolderInfo, FolderListResponse};
-use tracing::{debug, info};
+use tracing::{info};
 
 /// Folder metadata stored in JSON files
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct FolderMetadata {
+pub struct FolderMetadata {
     pub id: String,
     pub name: String,
     pub parent_id: Option<String>,
@@ -47,7 +47,7 @@ impl FolderManager {
     }
 
     /// Load folder metadata from file
-    fn load_folder_metadata(&self) -> Result<HashMap<String, FolderMetadata>, AppError> {
+    pub fn load_folder_metadata(&self) -> Result<HashMap<String, FolderMetadata>, AppError> {
         if !self.metadata_file.exists() {
             return Ok(HashMap::new());
         }
@@ -69,7 +69,7 @@ impl FolderManager {
     }
 
     /// Load file metadata from file
-    fn load_file_metadata(&self) -> Result<HashMap<String, FileMetadata>, AppError> {
+    pub fn load_file_metadata(&self) -> Result<HashMap<String, FileMetadata>, AppError> {
         if !self.file_metadata_file.exists() {
             return Ok(HashMap::new());
         }
@@ -304,7 +304,6 @@ impl FolderManager {
             file_metadata.insert(filename.clone(), file_meta);
             folder_manager.save_file_metadata(&file_metadata)?;
             
-            debug!("Assigned file '{}' to folder: {:?} with size: {}", filename, folder_id, size);
             Ok(())
         })
         .await
@@ -327,11 +326,17 @@ impl FolderManager {
     /// Get list of files in a specific folder
     pub fn get_files_in_folder(&self, folder_id: Option<String>) -> Result<Vec<String>, AppError> {
         let file_metadata = self.load_file_metadata()?;
-        let files: Vec<String> = file_metadata
-            .values()
-            .filter(|file| file.folder_id == folder_id)
-            .map(|file| file.filename.clone())
-            .collect();
+        let files: Vec<String> = match folder_id {
+            Some(ref fid) => file_metadata
+                .values()
+                .filter(|file| file.folder_id.as_ref() == Some(fid))
+                .map(|file| file.filename.clone())
+                .collect(),
+            None => file_metadata
+                .values()
+                .map(|file| file.filename.clone())
+                .collect(),
+        };
         Ok(files)
     }
 
@@ -402,12 +407,6 @@ impl FolderManager {
         .map_err(|_| AppError::Internal("Failed to execute move folder task".to_string()))?
     }
 
-    /// Get all file metadata
-    pub fn get_all_files(&self) -> Result<Vec<FileMetadata>, AppError> {
-        let file_metadata = self.load_file_metadata()?;
-        Ok(file_metadata.values().cloned().collect())
-    }
-
     /// Get folder info by ID
     pub async fn get_folder_info(&self, folder_id: &str) -> Result<FolderInfo, AppError> {
         let folder_manager = self.clone();
@@ -449,31 +448,6 @@ impl FolderManager {
         .map_err(|_| AppError::Internal("Failed to execute get folder info task".to_string()))?
     }
 
-    /// Get full folder path (for building directory structure in exports)
-    pub async fn get_folder_path(&self, folder_id: &str) -> Result<String, AppError> {
-        let folder_manager = self.clone();
-        let folder_id = folder_id.to_string();
-        
-        tokio::task::spawn_blocking(move || {
-            let folder_metadata = folder_manager.load_folder_metadata()?;
-            
-            let mut path_parts = Vec::new();
-            let mut current_id = Some(folder_id);
-            
-            while let Some(id) = current_id {
-                if let Some(folder) = folder_metadata.get(&id) {
-                    path_parts.insert(0, folder.name.clone());
-                    current_id = folder.parent_id.clone();
-                } else {
-                    break;
-                }
-            }
-            
-            Ok(path_parts.join("/"))
-        })
-        .await
-        .map_err(|_| AppError::Internal("Failed to execute get folder path task".to_string()))?
-    }
 }
 
 impl Clone for FolderManager {

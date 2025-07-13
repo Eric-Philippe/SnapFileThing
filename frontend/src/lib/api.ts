@@ -6,6 +6,7 @@ import {
   CreateFolderRequest,
   MoveFileRequest,
   MoveFolderRequest,
+  ImportResponse,
 } from "../types/api";
 
 // Token management
@@ -131,11 +132,22 @@ async function authenticatedFetch(
     await authApi.tryRefreshToken();
   }
 
-  const headers = {
-    "Content-Type": "application/json",
-    ...getAuthHeaders(),
-    ...options.headers,
-  };
+  // Only set Content-Type to application/json if not sending FormData
+  // Merge headers from getAuthHeaders and options.headers (which may be a Headers object)
+  let headers: Record<string, string> = { ...getAuthHeaders() };
+  if (options.headers) {
+    if (options.headers instanceof Headers) {
+      options.headers.forEach((value, key) => {
+        headers[key] = value;
+      });
+    } else {
+      headers = { ...headers, ...(options.headers as Record<string, string>) };
+    }
+  }
+  const isFormData = options.body instanceof FormData;
+  if (!isFormData) {
+    headers["Content-Type"] = "application/json";
+  }
 
   let response = await fetch(url, {
     ...options,
@@ -350,6 +362,19 @@ export const uploadApi = {
 
 // File management functions
 export const filesApi = {
+  // Import files from ZIP
+  async importFiles(zipFile: File, folderId?: string): Promise<ImportResponse> {
+    const formData = new FormData();
+    formData.append("file", zipFile);
+    if (folderId) formData.append("folder_id", folderId);
+
+    const response = await authenticatedFetch(`${API_BASE}/files/import`, {
+      method: "POST",
+      body: formData,
+    });
+    return handleResponse<ImportResponse>(response);
+  },
+
   // Export all files as ZIP
   async exportAllFiles(
     originalsOnly = false,
@@ -480,7 +505,12 @@ export const foldersApi = {
 
 // Health check
 export const healthApi = {
-  async check(): Promise<{ status: string }> {
+  async check(): Promise<{
+    status: string;
+    version: string;
+    uptime: number;
+    auth_mode: "protected" | "unprotected";
+  }> {
     const response = await fetch(`${API_BASE}/health`);
     return handleResponse(response);
   },

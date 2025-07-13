@@ -121,6 +121,7 @@ async fn main() -> std::io::Result<()> {
                     .service(handlers::files::delete_file)
                     .service(handlers::files::move_file)
                     .service(handlers::files::export_files)
+                    .service(handlers::files::import_files)
                     .service(handlers::folders::list_folders)
                     .service(handlers::folders::create_folder)
                     .service(handlers::folders::delete_folder)
