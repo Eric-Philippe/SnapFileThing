@@ -27,9 +27,7 @@ qoi = "0.4"
 # Utilities
 uuid = { version = "1.17", features = ["v4"] }
 chrono = { version = "0.4", features = ["serde"] }
-mime = "0.3"
 base64 = "0.22"
-sha2 = "0.10"
 
 # Configuration
 dotenv = "0.15"
@@ -45,7 +43,6 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 # Security
 constant_time_eq = "0.4"
 jsonwebtoken = "9"
-rand = "0.9"
 
 # Rate limiting
 governor = "0.10"

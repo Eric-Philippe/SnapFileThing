@@ -26,7 +26,8 @@ FROM rust:1.88-alpine AS builder
 WORKDIR /app
 
 # Install build dependencies
-RUN apk add --no-cache musl-dev
+RUN apk add --no-cache musl-dev curl
+ENV CARGO_INCREMENTAL=1
 
 # Copy dependency files first for better caching
 COPY backend/Cargo.toml backend/Cargo.lock ./

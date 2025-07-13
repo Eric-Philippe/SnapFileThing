@@ -8,7 +8,8 @@ on:
       - "**/*.ts"
       - "**/*.rs"
       - "**/*.tsx"
-
+      - "Dockerfile"
+      - "**/*.yml"
 jobs:
   build-and-deploy:
     strategy:
