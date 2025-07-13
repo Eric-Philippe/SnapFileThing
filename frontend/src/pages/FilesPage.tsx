@@ -3,6 +3,7 @@ import { Navigation } from "@/components/Navigation";
 import FileExplorer from "@/components/FileExplorer/FileExplorer";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { FolderOpen } from "lucide-react";
+import { Footer } from "@/components/Footer";
 
 function FilesPage() {
   const [error, setError] = useState("");
@@ -38,7 +39,7 @@ function FilesPage() {
         )}
 
         {/* Desktop File Explorer */}
-        <div className="h-[600px]">
+        <div className="h-[650px]">
           <FileExplorer
             currentFolderId={currentFolderId}
             onFolderChange={handleFolderChange}
@@ -46,6 +47,8 @@ function FilesPage() {
           />
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 }

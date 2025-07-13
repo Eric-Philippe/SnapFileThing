@@ -1,39 +1,7 @@
-use actix_web::{get, delete, put, web, HttpResponse, Result, HttpRequest};
-use serde::Deserialize;
-use utoipa::{IntoParams, ToSchema};
-use crate::config::AppConfig;
-use crate::error::AppError;
+pub use crate::handlers::export::export_files;
+pub use crate::handlers::import::import_files;
+use actix_web::get;
 use crate::models::FileListResponse;
-use crate::services::file_utils::FileManager;
-use crate::services::folder_manager::FolderManager;
-use tracing::{info, warn};
-use std::io::Write;
-
-#[derive(Deserialize, IntoParams, ToSchema)]
-pub struct ListQuery {
-    /// Page number (0-based)
-    page: Option<usize>,
-    /// Number of items per page (max 100)
-    per_page: Option<usize>,
-    /// Folder ID to filter files (optional, omit for root level)
-    folder_id: Option<String>,
-}
-
-#[derive(Deserialize, ToSchema)]
-pub struct MoveFileRequest {
-    /// Target folder ID (optional, use None for root folder)
-    folder_id: Option<String>,
-}
-
-#[derive(Deserialize, IntoParams, ToSchema)]
-pub struct ExportQuery {
-    /// Export only original files for images (skip thumbnails and QOI files)
-    #[serde(default)]
-    originals_only: bool,
-    /// Folder ID to export files from (optional, omit for all files)
-    folder_id: Option<String>,
-}
-
 #[utoipa::path(
     get,
     path = "/api/files",
@@ -65,6 +33,23 @@ pub async fn list_files(
 
     // Get files in the specified folder
     let files_in_folder = folder_manager.get_files_in_folder(query.folder_id.clone())?;
+    // If querying root (None), filter only files with folder_id == None
+    let files_in_folder = if query.folder_id.is_none() {
+        let file_metadata = folder_manager.load_file_metadata()?;
+        file_metadata
+            .iter()
+            .filter_map(|(filename, meta)| {
+                // Accept files with folder_id == None or folder_id == "root"
+                if meta.folder_id.is_none() || meta.folder_id.as_deref() == Some("root") {
+                    Some(filename.clone())
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>()
+    } else {
+        files_in_folder
+    };
     let (files, total) = file_manager.list_files_with_filter(page, per_page, Some(files_in_folder)).await?;
     
     let total_pages = if per_page > 0 {
@@ -93,6 +78,43 @@ pub async fn list_files(
 
     Ok(HttpResponse::Ok().json(response))
 }
+
+use actix_web::{delete, put, web, HttpResponse, Result, HttpRequest};
+use serde::Deserialize;
+use utoipa::{IntoParams, ToSchema};
+use crate::config::AppConfig;
+use crate::error::AppError;
+use crate::services::file_utils::FileManager;
+use crate::services::folder_manager::FolderManager;
+use tracing::{info, warn};
+
+#[derive(Deserialize, IntoParams, ToSchema)]
+pub struct ListQuery {
+    /// Page number (0-based)
+    page: Option<usize>,
+    /// Number of items per page (max 100)
+    per_page: Option<usize>,
+    /// Folder ID to filter files (optional, omit for root level)
+    folder_id: Option<String>,
+}
+
+#[derive(Deserialize, ToSchema)]
+pub struct MoveFileRequest {
+    /// Target folder ID (optional, use None for root folder)
+    folder_id: Option<String>,
+}
+
+#[derive(Deserialize, IntoParams, ToSchema, Clone)]
+pub struct ExportQuery {
+    /// Folder ID to export files from (optional, omit for all files)
+    pub folder_id: Option<String>,
+}
+
+// Re-export import/export types and OpenAPI paths for OpenAPI and main.rs compatibility
+pub use crate::handlers::import::{ImportRequest, __path_import_files};
+pub use crate::handlers::export::__path_export_files;
+
+
 
 #[utoipa::path(
     delete,
@@ -218,114 +240,4 @@ pub async fn move_file(
     })))
 }
 
-#[utoipa::path(
-    get,
-    path = "/api/files/export",
-    params(ExportQuery),
-    responses(
-        (status = 200, description = "ZIP archive with files", content_type = "application/zip"),
-        (status = 401, description = "Unauthorized", body = ErrorResponse),
-        (status = 404, description = "No files found", body = ErrorResponse),
-        (status = 500, description = "Internal server error", body = ErrorResponse),
-    ),
-    security(("bearer_auth" = [])),
-    tag = "Files"
-)]
-#[get("/files/export")]
-pub async fn export_files(
-    query: web::Query<ExportQuery>,
-    config: web::Data<AppConfig>,
-) -> Result<HttpResponse, AppError> {
-    let file_manager = FileManager::new(
-        &config.server.upload_dir,
-        config.get_static_base_url(),
-    );
-    let folder_manager = FolderManager::new(&config.server.upload_dir);
 
-    // Get files to export based on folder filter
-    let files_to_export = if let Some(ref folder_id) = query.folder_id {
-        folder_manager.get_files_in_folder(Some(folder_id.clone()))?
-    } else {
-        // Get all files if no folder specified
-        let all_files_metadata = folder_manager.get_all_files()?;
-        all_files_metadata.into_iter().map(|meta| meta.filename).collect()
-    };
-
-    if files_to_export.is_empty() {
-        return Err(AppError::NotFound("No files found to export".to_string()));
-    }
-
-    // Create ZIP archive in memory
-    let mut zip_data = Vec::new();
-    {
-        let mut zip = zip::ZipWriter::new(std::io::Cursor::new(&mut zip_data));
-        
-        // Options for files in ZIP
-        let options = zip::write::FileOptions::default()
-            .compression_method(zip::CompressionMethod::Deflated)
-            .unix_permissions(0o644);
-
-        for filename in &files_to_export {
-            let file_path = file_manager.get_file_path(filename);
-            
-            if !file_path.exists() {
-                warn!("File not found during export: {}", filename);
-                continue;
-            }
-
-            // Check if we should skip this file based on originals_only setting
-            if query.originals_only {
-                // Skip thumbnails and QOI files for images
-                if filename.contains("_thumb.") || filename.ends_with(".qoi") {
-                    continue;
-                }
-            }
-
-            // Get folder path for this file to maintain directory structure
-            let file_folder_id = folder_manager.get_file_folder(filename).await?;
-            let folder_path = if let Some(folder_id) = file_folder_id {
-                folder_manager.get_folder_path(&folder_id).await?
-            } else {
-                String::new() // Root folder
-            };
-
-            // Create the full path in ZIP (maintaining folder structure)
-            let zip_path = if folder_path.is_empty() {
-                filename.clone()
-            } else {
-                format!("{}/{}", folder_path, filename)
-            };
-
-            // Read file content
-            let file_content = std::fs::read(&file_path)
-                .map_err(|e| AppError::Internal(format!("Failed to read file {}: {}", filename, e)))?;
-
-            // Add file to ZIP
-            zip.start_file(&zip_path, options)
-                .map_err(|e| AppError::Internal(format!("Failed to start ZIP file entry: {}", e)))?;
-            
-            zip.write_all(&file_content)
-                .map_err(|e| AppError::Internal(format!("Failed to write file to ZIP: {}", e)))?;
-        }
-
-        zip.finish()
-            .map_err(|e| AppError::Internal(format!("Failed to finalize ZIP archive: {}", e)))?;
-    }
-
-    // Generate filename for the ZIP
-    let zip_filename = if let Some(ref folder_id) = query.folder_id {
-        // Get folder name for ZIP filename
-        let folder_info = folder_manager.get_folder_info(folder_id).await?;
-        format!("{}_export.zip", folder_info.name)
-    } else {
-        "all_files_export.zip".to_string()
-    };
-
-    let export_type = if query.originals_only { "originals" } else { "all files" };
-    info!("Exported {} files ({}) to ZIP: {} files", files_to_export.len(), export_type, zip_filename);
-
-    Ok(HttpResponse::Ok()
-        .content_type("application/zip")
-        .append_header(("Content-Disposition", format!("attachment; filename=\"{}\"", zip_filename)))
-        .body(zip_data))
-}

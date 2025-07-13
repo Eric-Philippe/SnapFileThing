@@ -1,6 +1,11 @@
 import React from "react";
-import { FolderIcon, TrashIcon } from "@heroicons/react/24/outline";
+import {
+  DocumentArrowDownIcon,
+  FolderIcon,
+  TrashIcon,
+} from "@heroicons/react/24/outline";
 import { ExplorerItem } from "./FileExplorer";
+import { CopyCheckIcon } from "lucide-react";
 
 interface ListViewProps {
   items: ExplorerItem[];
@@ -14,9 +19,12 @@ interface ListViewProps {
   onItemDragOver: (e: React.DragEvent, item: ExplorerItem) => void;
   onItemDragLeave: (e: React.DragEvent, item: ExplorerItem) => void;
   onFolderDrop: (e: React.DragEvent, item: ExplorerItem) => void;
+  onShowUrls: (item: ExplorerItem) => void;
+  onDelete: (item: ExplorerItem) => void;
   getFileIcon: (mimeType?: string) => React.ElementType;
   formatFileSize: (bytes: number) => string;
   formatDate: (dateString: string) => string;
+  copyToClipboard: (text: string) => void;
 }
 
 export default function ListView({
@@ -31,9 +39,12 @@ export default function ListView({
   onItemDragOver,
   onItemDragLeave,
   onFolderDrop,
+  onShowUrls,
+  onDelete,
   getFileIcon,
   formatFileSize,
   formatDate,
+  copyToClipboard,
 }: ListViewProps) {
   return (
     <div className="divide-y divide-gray-200">
@@ -64,7 +75,13 @@ export default function ListView({
             } ${isDraggedOver ? "bg-green-50 ring-1 ring-green-500" : ""}`}
             onClick={(e) => !isBackFolder && onItemClick(item, e)}
             onDoubleClick={() => onItemDoubleClick(item)}
-            onContextMenu={(e) => !isBackFolder && onContextMenu(e, item)}
+            onContextMenu={(e) => {
+              if (!isBackFolder) {
+                e.preventDefault();
+                e.stopPropagation();
+                onContextMenu(e, item);
+              }
+            }}
             onDragStart={(e) => onItemDragStart(e, item)}
             onDragEnd={onItemDragEnd}
             onDragOver={(e) => onItemDragOver(e, item)}
@@ -110,20 +127,57 @@ export default function ListView({
             </div>
             <div className="col-span-1 flex justify-end">
               {!isBackFolder && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // You may want to pass a delete handler as prop for better separation
-                  }}
-                  className={`p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-opacity ${
-                    isSelected
-                      ? "opacity-100"
-                      : "opacity-0 group-hover:opacity-100"
-                  }`}
-                  title="Delete"
-                >
-                  <TrashIcon className="w-4 h-4" />
-                </button>
+                <>
+                  {item.type === "file" && (
+                    <>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onShowUrls(item);
+                        }}
+                        className={`p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-opacity ${
+                          isSelected
+                            ? "opacity-100"
+                            : "opacity-0 group-hover:opacity-100"
+                        }`}
+                        title="Copy Link"
+                      >
+                        <DocumentArrowDownIcon className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (item.urls?.original) {
+                            copyToClipboard(item.urls.original);
+                          }
+                        }}
+                        className={`p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-opacity ${
+                          isSelected
+                            ? "opacity-100"
+                            : "opacity-0 group-hover:opacity-100"
+                        }`}
+                        title="Copy Direct Link"
+                      >
+                        <CopyCheckIcon className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(item);
+                    }}
+                    className={`p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-opacity ${
+                      isSelected
+                        ? "opacity-100"
+                        : "opacity-0 group-hover:opacity-100"
+                    }`}
+                    title="Delete"
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                  </button>
+                </>
               )}
             </div>
           </div>

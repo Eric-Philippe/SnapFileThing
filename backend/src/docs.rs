@@ -7,7 +7,7 @@ use crate::models::{
     RefreshRequest, TokenVerifyResponse, LogoutResponse, FolderInfo,
     CreateFolderRequest, FolderListResponse, MoveFolderRequest
 };
-use crate::handlers::files::{ListQuery, ExportQuery, MoveFileRequest};
+use crate::handlers::files::{ListQuery, ExportQuery, MoveFileRequest, ImportRequest};
 use crate::handlers::folders::FolderQuery;
 use crate::handlers::upload::FileUploadRequest;
 use crate::handlers::auth::Claims;
@@ -44,6 +44,7 @@ impl Modify for SecurityAddon {
         
         // File management endpoints
         upload::upload_file,
+        files::import_files,
         files::list_files,
         files::delete_file,
         files::move_file,
@@ -84,7 +85,8 @@ impl Modify for SecurityAddon {
             ExportQuery,
             MoveFileRequest,
             FolderQuery,
-            FileUploadRequest
+            FileUploadRequest,
+            ImportRequest,
         )
     ),
     modifiers(&SecurityAddon),

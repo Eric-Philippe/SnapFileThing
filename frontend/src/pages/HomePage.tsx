@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { UploadResponse } from "@/types/api";
 import { Upload, FolderOpen, Camera, Zap, Shield, Globe } from "lucide-react";
+import { Footer } from "@/components/Footer";
 
 function HomePage() {
   const [recentUploads, setRecentUploads] = useState<UploadResponse[]>([]);
@@ -175,6 +176,8 @@ function HomePage() {
           </div>
         )}
       </main>
+
+      <Footer />
     </div>
   );
 }

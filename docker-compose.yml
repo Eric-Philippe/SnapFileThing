@@ -6,10 +6,10 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8080:8080" # Interface web + API
-      - "8081:8081" # Fichiers statiques
+      - "8080:8080" # Web Interface + API
+      - "8081:8081" # Static files
     volumes:
-      - uploads:/app/uploads
+      - ./uploads:/app/uploads
     environment:
       - RUST_LOG=info
     env_file:

@@ -23,6 +23,7 @@ interface ContextMenuProps {
   onDelete: () => void;
   onNewFolder: () => void;
   onUploadFiles: () => void;
+  onShowUrls?: (item: ExplorerItem) => void;
 }
 
 export default function ContextMenu({
@@ -39,8 +40,12 @@ export default function ContextMenu({
   onDelete,
   onNewFolder,
   onUploadFiles,
+  onShowUrls,
 }: ContextMenuProps) {
   if (!visible) return null;
+
+  console.log(item);
+
   return (
     <div
       ref={contextMenuRef}
@@ -89,6 +94,13 @@ export default function ContextMenu({
               >
                 <ClipboardDocumentIcon className="h-4 w-4 mr-3" />
                 Copy Link
+              </button>
+              <button
+                onClick={() => onShowUrls && onShowUrls(item)}
+                className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center"
+              >
+                <ClipboardDocumentIcon className="h-4 w-4 mr-3" />
+                Show URLs
               </button>
               <button
                 onClick={() => item.urls && onDownload(item.urls.original)}

@@ -1,3 +1,7 @@
+export interface ImportResponse {
+  success: boolean;
+  message: string;
+}
 export interface FileMetadata {
   size: number;
   mime_type: string;
