@@ -1,6 +1,6 @@
 [package]
 name = "snapfilething"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 authors = ["PHILIPPE Eric <ericphlpp@proton.me>"]
 description = "Lightweight file hosting service with QOI conversion and thumbnails"

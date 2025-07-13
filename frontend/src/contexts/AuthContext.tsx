@@ -29,6 +29,7 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+// AuthProvider component to wrap around the app
 export function AuthProvider({ children }: AuthProviderProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
