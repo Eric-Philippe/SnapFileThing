@@ -12,7 +12,7 @@ function HomePage() {
   const [recentUploads, setRecentUploads] = useState<UploadResponse[]>([]);
 
   const handleUploadComplete = (results: UploadResponse[]) => {
-    setRecentUploads((prev) => [...results, ...prev].slice(0, 5)); // Keep only last 5
+    setRecentUploads((prev) => [...results, ...prev].slice(0, 5));
   };
 
   return (
