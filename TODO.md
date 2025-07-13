@@ -27,6 +27,6 @@
 
 - [ ] Make tests
 - [ ] Document the whole backend
-- [ ] Make a CI/CD for building the container
-- [ ] Make proper branches for releases with CI/CD later
+- [x] Make a CI/CD for building the container
+- [x] Make proper branches for releases with CI/CD later
 - [ ] Write a complete README.md for the project

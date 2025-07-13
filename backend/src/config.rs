@@ -22,7 +22,7 @@ pub struct ServerConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuthConfig {
-    pub mode: String, // "protected" or "disabled"
+    pub mode: String, // "protected" or "local"
     pub admin_username: String,
     pub admin_password: String,
     pub jwt_secret: String,
@@ -297,8 +297,8 @@ impl AppConfig {
     }
 
     fn validate(&self) -> Result<()> {
-        if self.auth.mode != "protected" && self.auth.mode != "disabled" {
-            anyhow::bail!("Auth mode must be either 'protected' or 'disabled'");
+        if self.auth.mode != "protected" && self.auth.mode != "local" {
+            anyhow::bail!("Auth mode must be either 'protected' or 'local'");
         }
         
         if self.auth.mode == "protected" && self.auth.admin_password == "changeme" {

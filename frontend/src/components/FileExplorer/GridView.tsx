@@ -1,6 +1,7 @@
 import React from "react";
 import { FolderIcon, TrashIcon } from "@heroicons/react/24/outline";
 import { ExplorerItem } from "./FileExplorer";
+import { ClipboardCheckIcon } from "lucide-react";
 
 interface GridViewProps {
   items: ExplorerItem[];
@@ -87,21 +88,7 @@ export default function GridView({
                     }`}
                     title="Copy Direct Link"
                   >
-                    {/* Use a link/copy icon, fallback to TrashIcon if not available */}
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="w-3 h-3"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 17l4 4 4-4m0-5V3m-8 4v12a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-3"
-                      />
-                    </svg>
+                    <ClipboardCheckIcon className="w-4 h-4" />
                   </button>
                 )}
                 <button
